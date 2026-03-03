@@ -1,6 +1,5 @@
 import { calculateItem } from '../calculation-engine/calculateItem'
 import type { MaterialType, ParsedParams } from '../calculation-engine/types'
-import type { DuctItemType } from '../../lib/types'
 
 export interface DuctDimensions {
   width?: number  // W1 / W
@@ -24,11 +23,13 @@ export interface DuctDimensions {
  * @param settings Cấu hình tính toán
  * @returns       Diện tích m² (đã chia 1_000_000 hoặc theo công thức m)
  */
+import type { AppSettings, ConnectorType, SeamType } from '../../lib/types'
+
 export function calcArea(
   type: string,
   dims: DuctDimensions,
-  settings: any,
-  connectors?: { conn1?: any; conn2?: any }
+  settings: AppSettings,
+  connectors?: { conn1?: ConnectorType; conn2?: ConnectorType }
 ): number {
   // Map UI type (DuctItemType) to Engine type (MaterialType)
   const typeMap: Record<string, MaterialType> = {
@@ -70,7 +71,7 @@ export function calcArea(
     {
       conn1: connectors?.conn1,
       conn2: connectors?.conn2,
-      seam: (dims as any).seam
+      seam: dims.seam as SeamType
     }
   )
   return result.area_m2

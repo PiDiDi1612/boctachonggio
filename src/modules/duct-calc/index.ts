@@ -8,7 +8,7 @@ export * from './constants'
 import { calcArea, type DuctDimensions } from './area'
 import { calcWeight } from './weight'
 import { getSettings } from '@/lib/storage'
-import type { DuctItem, DuctItemType } from '../../lib/types'
+import type { DuctItem } from '../../lib/types'
 
 // Mở rộng DuctDimensions để chứa thêm width2, height2
 export interface ExtendedDuctDimensions extends DuctDimensions {
@@ -77,7 +77,7 @@ export function calcItemMetrics(
   const dims = parseDimensions(item.type, item.dimensions)
 
   // Use the NEW hardcoded calcArea with settings and connector types
-  const area = calcArea(item.type, { ...dims, seam: (item as any).seam } as any, settings, {
+  const area = calcArea(item.type, { ...dims, seam: item.seam }, settings, {
     conn1: item.conn1,
     conn2: item.conn2
   })

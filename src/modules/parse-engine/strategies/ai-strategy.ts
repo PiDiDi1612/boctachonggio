@@ -84,7 +84,7 @@ export function createAIStrategy(config: AIParseConfig): ParseStrategy {
 
     const singleParseInternal = async (rawInput: string): Promise<ParseResult> => {
         const timeoutSignal = (config.timeout && typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal)
-            ? (AbortSignal as any).timeout(config.timeout)
+            ? (AbortSignal as unknown as { timeout: (ms: number) => AbortSignal }).timeout(config.timeout)
             : undefined;
 
         const response = await fetch(`${config.baseUrl}/chat/completions`, {
@@ -145,7 +145,7 @@ export function createAIStrategy(config: AIParseConfig): ParseStrategy {
                 const chunk = inputs.slice(i, i + batchSize);
                 try {
                     const timeoutSignal = (config.timeout && typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal)
-                        ? (AbortSignal as any).timeout(config.timeout)
+                        ? (AbortSignal as unknown as { timeout: (ms: number) => AbortSignal }).timeout(config.timeout)
                         : undefined;
 
                     const response = await fetch(`${config.baseUrl}/chat/completions`, {
@@ -189,10 +189,11 @@ export function createAIStrategy(config: AIParseConfig): ParseStrategy {
                             warnings: []
                         });
                     });
-                } catch (err: any) {
-                    console.warn(`[AI Strategy] Batch failure, falling back to single: ${err.message}`);
+                } catch (err: unknown) {
+                    const errMsg = err instanceof Error ? err.message : String(err);
+                    console.warn(`[AI Strategy] Batch failure, falling back to single: ${errMsg}`);
                     const partials = await Promise.all(chunk.map(text =>
-                        singleParseInternal(text).catch(() => fallback(text, err.message))
+                        singleParseInternal(text).catch(() => fallback(text, errMsg))
                     ));
                     allResults.push(...partials);
                 }

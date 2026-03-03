@@ -1,7 +1,7 @@
 // src/modules/assembly-engine/types.ts
 // BOM and accessory types
 
-import type { ConnectorType, SeamType } from '../core/types'
+import type { ConnectorType } from '../core/types'
 
 export interface AccessorySpec {
     /** Connector type that triggers this accessory */

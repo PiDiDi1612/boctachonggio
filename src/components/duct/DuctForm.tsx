@@ -2,7 +2,7 @@
 // Form thêm/sửa hạng mục ống gió – shadcn Dialog + Zod validation
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -23,12 +23,14 @@ import {
   THICKNESS_OPTIONS, DUCT_TYPE_LABELS, UNIT_OPTIONS, DEFAULT_THICKNESS
 } from '@/modules/duct-calc/constants'
 import {
-  parseDimensions, buildDimString, calcItemMetrics,
+  parseDimensions, buildDimString,
 } from '@/modules/duct-calc'
 import {
   CONNECTOR_OPTIONS, SEAM_OPTIONS,
 } from '@/modules/duct-calc/constants'
 import { fmtNumber } from '@/lib/utils'
+import { getSettings } from '@/lib/storage'
+import * as projectService from '@/modules/project-engine/project-service'
 
 // ─── Zod schema ───────────────────────────────────────────────────────────────
 
@@ -195,26 +197,52 @@ export function DuctForm({ open, onOpenChange, initialItem, onSave }: DuctFormPr
     }
   }, [open, initialItem, reset])
 
-  const [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam] =
-    watch(['type', 'thickness', 'quantity', 'dimW', 'dimH', 'dimL', 'dimD', 'dimE', 'dimW2', 'dimH2', 'conn1', 'conn2', 'seam'])
+  const [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam, note] =
+    watch(['type', 'thickness', 'quantity', 'dimW', 'dimH', 'dimL', 'dimD', 'dimE', 'dimW2', 'dimH2', 'conn1', 'conn2', 'seam', 'note'])
 
-  // Live preview calculation
-  const preview = useMemo(() => {
-    const metrics = calcItemMetrics({
-      type,
-      dimensions: buildDimString(type, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2),
-      thickness,
-      conn1: conn1 as ConnectorType,
-      conn2: conn2 as ConnectorType,
-      seam: seam as SeamType,
-    })
-    return {
-      area: metrics.area,
-      weight: metrics.weight,
-      totalArea: metrics.area * quantity,
-      totalWeight: metrics.weight * quantity
+  const [preview, setPreview] = useState({ area: 0, weight: 0, totalArea: 0, totalWeight: 0 })
+  const [calculating, setCalculating] = useState(false)
+
+  // Live preview calculation (Async via Service to ensure consistency)
+  useEffect(() => {
+    let mounted = true
+    const settings = getSettings()
+
+    async function updatePreview() {
+      setCalculating(true)
+      try {
+        const item = await projectService.processManualItem(
+          note || '', // rawText
+          quantity,
+          thickness,
+          settings,
+          {
+            type: type as DuctItemType,
+            dimensions: buildDimString(type, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2),
+            conn1: conn1 as ConnectorType,
+            conn2: conn2 as ConnectorType,
+            seam: seam as SeamType
+          }
+        )
+        if (mounted) {
+          setPreview({
+            area: item.area,
+            weight: item.weight,
+            totalArea: item.area * quantity,
+            totalWeight: item.weight * quantity
+          })
+        }
+      } finally {
+        if (mounted) setCalculating(false)
+      }
     }
-  }, [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam])
+
+    const timer = setTimeout(updatePreview, 300) // Debounce 300ms
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
+  }, [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam, note])
 
   function onSubmit(data: FormValues) {
     const dimensions = buildDimString(data.type, data.dimW, data.dimH, data.dimL, data.dimD, data.dimE, data.dimW2, data.dimH2)
@@ -439,7 +467,10 @@ export function DuctForm({ open, onOpenChange, initialItem, onSave }: DuctFormPr
           {/* Live preview */}
           <Separator />
           <div className="bg-muted/40 rounded-lg p-3.5 space-y-2">
-            <div className="section-label mb-2">Tính trước</div>
+            <div className="section-label mb-2 flex items-center gap-2">
+              Tính trước
+              {calculating && <div className="w-3 h-3 border-2 border-[var(--primary-main)] border-t-transparent rounded-full animate-spin" />}
+            </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {[
                 { label: 'Diện tích / cái', value: fmtNumber(preview.area, 4), unit: 'm²', color: 'text-primary' },

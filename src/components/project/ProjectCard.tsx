@@ -4,8 +4,6 @@
 import { Trash2, ChevronRight } from 'lucide-react'
 import type { Project } from '@/lib/types'
 import { fmtDate, fmtNumber } from '@/lib/utils'
-import { calcItemMetrics } from '@/modules/duct-calc'
-
 interface Props {
   project: Project
   onClick: () => void
@@ -15,9 +13,8 @@ interface Props {
 function calcStats(project: Project) {
   let totalArea = 0, totalWeight = 0
   for (const item of project.items) {
-    const { area, weight } = calcItemMetrics(item)
-    totalArea += area * item.quantity
-    totalWeight += weight * item.quantity
+    totalArea += item.area * item.quantity
+    totalWeight += item.weight * item.quantity
   }
   return { totalItems: project.items.length, totalArea, totalWeight }
 }

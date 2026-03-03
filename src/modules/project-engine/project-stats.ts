@@ -3,7 +3,6 @@
 
 import type { NormalizedItem, ProjectStats, CalcSettings, CalculationOutput } from '../core/types'
 import { hashKey, getFromCache, setInCache, invalidateIfSettingsChanged } from '../cache'
-import { toMaterialType } from '../normalize'
 
 /**
  * Compute total stats for a list of items.

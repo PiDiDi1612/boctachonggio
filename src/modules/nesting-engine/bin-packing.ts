@@ -2,7 +2,7 @@
 // Dynamic-Length Sheet Optimizer (DLSO)
 // Optimized for coil-fed production with fixed width and variable length
 
-import type { NestingPiece, Placement, DynamicSheetResult, SheetSize } from './types'
+import type { NestingPiece, Placement, DynamicSheetResult } from './types'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

@@ -43,7 +43,7 @@ const CALCULATOR_REGISTRY: Map<MaterialType, CalculatorFn> = new Map([
  * Default calculator for unknown types.
  * Returns zero values instead of crashing.
  */
-function calculateUnknown(_params: ParsedParams, _quantity: number): CalculationResult {
+function calculateUnknown(): CalculationResult {
     return {
         area_m2: 0,
         total_area_m2: 0,

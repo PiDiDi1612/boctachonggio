@@ -35,7 +35,7 @@ function detectType(s: string): DuctItemType {
     return 'straight_square' // Default
 }
 
-function parseDimensions(s: string, type: DuctItemType): NormalizedParams {
+function parseDimensions(s: string): NormalizedParams {
     const params = { ...EMPTY_PARAMS }
 
     const m1 = s.match(PATTERN_W_H_L)
@@ -66,7 +66,7 @@ function parseDimensions(s: string, type: DuctItemType): NormalizedParams {
     return params
 }
 
-function parseConnectors(s: string, params: NormalizedParams, type: DuctItemType): { conn1: ConnectorType; conn2: ConnectorType } {
+function parseConnectors(s: string): { conn1: ConnectorType; conn2: ConnectorType } {
     const res = { conn1: 'tdc' as ConnectorType, conn2: 'tdc' as ConnectorType }
 
     if (s.includes('BÍCH V30')) res.conn1 = res.conn2 = 'bich_v30'
@@ -79,7 +79,7 @@ function parseConnectors(s: string, params: NormalizedParams, type: DuctItemType
     return res
 }
 
-function parseSeam(s: string, type: DuctItemType): SeamType {
+function parseSeam(s: string): SeamType {
     if (s.includes('ĐƠN KÉP')) return 'don_kep'
     if (s.includes('NỐI C')) return 'noi_c'
     if (s.includes('HÀN')) return 'han_15'
@@ -99,7 +99,7 @@ export const regexStrategy: ParseStrategy = {
         let displayType = detectType(s)
 
         // 2. Parse dimensions
-        const params = parseDimensions(s, displayType)
+        const params = parseDimensions(s)
 
         // 2.5. Auto-upgrade plenum_box → reducer_square when W2/H2 detected
         if ((displayType === 'plenum_box' || s.includes('HỘP GIÓ')) && params.W2 > 0 && params.H2 > 0) {
@@ -107,7 +107,7 @@ export const regexStrategy: ParseStrategy = {
         }
 
         // 3. Parse connectors
-        const connector = parseConnectors(s, params, displayType)
+        const connector = parseConnectors(s)
 
         // Apply shoe_tap default connector
         if (displayType === 'shoe_tap') {
@@ -115,7 +115,7 @@ export const regexStrategy: ParseStrategy = {
         }
 
         // 4. Parse seam
-        const seam = parseSeam(s, displayType)
+        const seam = parseSeam(s)
 
         // 5. Validation warnings
         if (params.W === 0 && params.D === 0) warnings.push('Could not determine width/diameter')

@@ -1,7 +1,7 @@
 // src/modules/rule-engine/connector-rules.ts
 // Business rules for auto-detecting connectors from item metadata
 
-import type { DuctItemType, ConnectorType, ConnectorConfig } from '../core/types'
+import type { DuctItemType, ConnectorConfig } from '../core/types'
 
 export interface ConnectorRuleInput {
     rawText: string

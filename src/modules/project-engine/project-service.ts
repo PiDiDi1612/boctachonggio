@@ -2,11 +2,11 @@
 // Business operations for project management
 // Orchestrates all engines via ProjectOrchestrator
 
-import type { NormalizedItem, ConnectorConfig, NormalizedParams, MaterialType } from '../core/types'
+
 import { parseText, parseBatch } from '../parse-engine'
 import { applyConnectorDefaults, applySeamDefaults } from '../rule-engine'
 import { toMaterialType, buildDimensionString } from '../normalize'
-import { EMPTY_PARAMS, type EstimationContext, ALL_MATERIAL_TYPES } from '../core/types'
+import { type EstimationContext, ALL_MATERIAL_TYPES } from '../core/types'
 import { MODULE_VERSIONS } from '../core/versions'
 
 // Orchestrator & Dependencies
@@ -20,7 +20,7 @@ import { getCorrectionFactor as getCorrectionFactorAsync } from '../calculation-
 import { generateAccessories } from '../assembly-engine'
 import { generateParts } from '../nesting-engine/part-generator'
 import { nestDynamic } from '../nesting-engine'
-import type { AppSettings, DuctItem } from '@/lib/types'
+import type { DuctItem, AppSettings, DuctItemType } from '@/lib/types'
 
 // ─── Orchestrator Setup ───────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ const orchestrator = new ProjectOrchestrator({
         get: (text) => parseCache.get(text),
         set: (text, res) => parseCache.set(text, res)
     },
-    calculationEngine: calculateItem as any, // Cast to handle AppSettings/CalcSettings diff
+    calculationEngine: calculateItem as unknown as ConstructorParameters<typeof ProjectOrchestrator>[0]['calculationEngine'], // Handle type differences elegantly
     calcCache: {
         hashKey: calcCache.hashKey,
         get: (key) => calcCache.getFromCache(key),
@@ -102,7 +102,7 @@ export async function processFullProject(
 export function mapToDuctItems(orchestratorResult: ProjectResult): DuctItem[] {
     return orchestratorResult.items.map(res => ({
         id: res.item.id,
-        type: res.item.displayType as any,
+        type: res.item.displayType as DuctItemType,
         dimensions: buildDimensionString(res.item.params),
         quantity: res.item.quantity,
         thickness: res.item.thickness,
@@ -135,10 +135,15 @@ export async function processManualItem(
     text: string,
     quantity: number,
     thickness: number,
-    settings: AppSettings
+    settings: AppSettings,
+    overrides?: Partial<DuctItem>
 ): Promise<DuctItem> {
     const items = await batchCreateFromExcel([{ name: text, quantity, thickness }], settings)
-    return items[0]
+    const item = items[0]
+    if (overrides) {
+        return { ...item, ...overrides }
+    }
+    return item
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────

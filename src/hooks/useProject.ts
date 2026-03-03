@@ -50,10 +50,11 @@ export function useProject(id: string) {
       const settings = getSettings()
       // Use Orchestrator via Service for calculation and parsing consistency
       const item = await projectService.processManualItem(
-        (values as any).note || '', // rawText
+        values.note || '', // rawText
         values.quantity,
         values.thickness,
-        settings
+        settings,
+        values // Pass values as overrides to maintain manual entries (D, E, etc.)
       )
       await persist({ ...project, items: [...project.items, item] })
     },
@@ -75,10 +76,11 @@ export function useProject(id: string) {
       if (!project) return
       const settings = getSettings()
       const newItem = await projectService.processManualItem(
-        (values as any).note || '',
+        values.note || '',
         values.quantity,
         values.thickness,
-        settings
+        settings,
+        values
       )
       const items = project.items.map((i) =>
         i.id === itemId ? { ...newItem, id: i.id } : i

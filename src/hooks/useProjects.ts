@@ -1,12 +1,11 @@
 // src/hooks/useProjects.ts
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Project, GlobalStats } from '@/lib/types'
 import {
   getProjects, upsertProject, deleteProjectById, clearAllData,
 } from '@/lib/storage'
-import { calcItemMetrics } from '@/modules/duct-calc'
 import { genId } from '@/lib/utils'
 
 export function useProjects() {
@@ -58,21 +57,23 @@ export function useProjects() {
   }, [])
 
   // ─── Tính thống kê tổng hợp ─────────────────────────────────────────────
-  const globalStats: GlobalStats = {
-    totalProjects: projects.length,
-    totalItems: 0,
-    totalArea: 0,
-    totalWeight: 0,
-  }
-
-  for (const p of projects) {
-    globalStats.totalItems += p.items.length
-    for (const item of p.items) {
-      const { area, weight } = calcItemMetrics(item)
-      globalStats.totalArea += area * item.quantity
-      globalStats.totalWeight += weight * item.quantity
+  const globalStats: GlobalStats = useMemo(() => {
+    const stats: GlobalStats = {
+      totalProjects: projects.length,
+      totalItems: 0,
+      totalArea: 0,
+      totalWeight: 0,
     }
-  }
+
+    for (const p of projects) {
+      stats.totalItems += p.items.length
+      for (const item of p.items) {
+        stats.totalArea += item.area * item.quantity
+        stats.totalWeight += item.weight * item.quantity
+      }
+    }
+    return stats
+  }, [projects])
 
   return {
     projects,

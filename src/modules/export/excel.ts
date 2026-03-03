@@ -99,7 +99,7 @@ export function exportProjectToExcel(project: Project, config?: AccessoryConfig)
   const calcKeGoc = totalTdcConnectorEnds * 4
 
   const accHeaders = ['Phân loại', 'Tên vật tư', 'Đơn vị', 'Định mức', 'Khối lượng / Số lượng']
-  const accData: any[][] = [accHeaders]
+  const accData: unknown[][] = [accHeaders]
 
   // Add Vật tư chính (Tôn mạ kẽm)
   Object.entries(steelSummary).forEach(([thick, area], idx) => {
@@ -145,16 +145,27 @@ export function exportProjectToExcel(project: Project, config?: AccessoryConfig)
   const dateStr = new Date().toISOString().slice(0, 10)
   const filename = `DuctPro_${safeName}_${dateStr}.xlsx`
 
-  if (typeof window !== 'undefined' && (window as any).electronAPI) {
-    const api = (window as any).electronAPI
+  interface SaveDialogResult {
+    canceled: boolean
+    filePath?: string
+  }
+
+  interface ElectronAPI {
+    showSaveDialog: (options: unknown) => Promise<SaveDialogResult>
+    saveFile: (path: string, data: Uint8Array) => Promise<{ success: boolean; error?: string }>
+    showNotification?: (title: string, body: string) => void
+  }
+
+  if (typeof window !== 'undefined' && (window as unknown as { electronAPI: ElectronAPI }).electronAPI) {
+    const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI
     api.showSaveDialog({
       title: 'Lưu file Excel thông kê',
       defaultPath: filename,
       filters: [{ name: 'Excel Files', extensions: ['xlsx'] }]
-    }).then(async (result: any) => {
+    }).then(async (result) => {
       if (!result.canceled && result.filePath) {
         const buffer = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
-        const saveRes = await api.saveFile(result.filePath, buffer)
+        const saveRes = await api.saveFile(result.filePath, new Uint8Array(buffer))
         if (saveRes.success) {
           // Try to show notification if implemented
           if (api.showNotification) {

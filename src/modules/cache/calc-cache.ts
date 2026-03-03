@@ -3,7 +3,7 @@
 // Invalidates when settings change
 
 import { MODULE_VERSIONS } from '../core/versions'
-import type { CalcSettings, CalculationOutput, NormalizedParams, ConnectorType, SeamType } from '../core/types'
+import type { CalcSettings, CalculationOutput, NormalizedParams, ConnectorType, SeamType, MaterialType } from '../core/types'
 
 interface CacheEntry {
     result: CalculationOutput
@@ -19,7 +19,7 @@ let settingsHash = ''
  * Uses a simple string concatenation — fast and collision-free for our domain.
  */
 export function hashKey(
-    materialType: string,
+    materialType: MaterialType,
     params: NormalizedParams,
     quantity: number,
     thickness: number,

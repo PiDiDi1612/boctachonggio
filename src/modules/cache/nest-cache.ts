@@ -10,7 +10,6 @@ interface NestCacheEntry {
     timestamp: number
 }
 
-const STORAGE_KEY = 'ductpro_nest_cache'
 const MAX_ENTRIES = 500
 const cache = new Map<string, NestCacheEntry>()
 

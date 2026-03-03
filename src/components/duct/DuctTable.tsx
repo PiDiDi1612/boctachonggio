@@ -4,7 +4,6 @@
 import { useState, useMemo } from 'react'
 import { Pencil, Trash2, Copy, Search } from 'lucide-react'
 import type { DuctItem } from '@/lib/types'
-import { calcItemMetrics } from '@/modules/duct-calc'
 import { fmtNumber } from '@/lib/utils'
 
 interface Props {
@@ -72,11 +71,11 @@ export function DuctTable({ items, onEdit, onDelete, onDuplicate }: Props) {
 
   let sumArea = 0
   const rows = filteredItems.map(item => {
-    const { area, weight } = calcItemMetrics(item)
-    const ra = area * item.quantity
-    const rw = weight * item.quantity
+    // Sử dụng trực tiếp area/weight từ item (đã được Orchestrator tính toán sẵn)
+    const ra = item.area * item.quantity
+    const rw = item.weight * item.quantity
     sumArea += ra
-    return { item, area, weight, ra, rw }
+    return { item, area: item.area, weight: item.weight, ra, rw }
   })
 
   return (
@@ -139,7 +138,7 @@ export function DuctTable({ items, onEdit, onDelete, onDuplicate }: Props) {
 
               // Tính khối lượng trên mét dài (trọng lượng kg / chiều dài L (đổi ra m))
               // length trong DB thường lưu mm, ta chia 1000
-              const lengthInMeter = parseFloat(l as string) / 1000
+              const lengthInMeter = parseFloat(String(l)) / 1000
               const klTrucTiep = lengthInMeter > 0 ? (weight / lengthInMeter) : 0
 
               return (

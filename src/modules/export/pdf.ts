@@ -71,7 +71,7 @@ export function exportProjectToPDF(project: Project, config?: AccessoryConfig): 
     tyRenRatio: 1, longDenRatio: 4, siliconRatio: 0.2
   }
 
-  const finalY = (doc as any).lastAutoTable.finalY || 40
+  const finalY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY || 40
 
   doc.setFontSize(14)
   doc.text(removeAccents('BOC TACH VAT TU PHU'), 14, finalY + 15)
@@ -107,13 +107,24 @@ export function exportProjectToPDF(project: Project, config?: AccessoryConfig): 
 
   const buffer = doc.output('arraybuffer')
 
-  if (typeof window !== 'undefined' && (window as any).electronAPI) {
-    const api = (window as any).electronAPI
+  interface SaveDialogResult {
+    canceled: boolean
+    filePath?: string
+  }
+
+  interface ElectronAPI {
+    showSaveDialog: (options: unknown) => Promise<SaveDialogResult>
+    saveFile: (path: string, data: ArrayBuffer) => Promise<{ success: boolean; error?: string }>
+    showNotification?: (title: string, body: string) => void
+  }
+
+  if (typeof window !== 'undefined' && (window as unknown as { electronAPI: ElectronAPI }).electronAPI) {
+    const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI
     api.showSaveDialog({
       title: 'Luu file PDF',
       defaultPath: filename,
       filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-    }).then(async (result: any) => {
+    }).then(async (result) => {
       if (!result.canceled && result.filePath) {
         const saveRes = await api.saveFile(result.filePath, buffer)
         if (saveRes.success) {

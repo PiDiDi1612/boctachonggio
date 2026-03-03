@@ -6,8 +6,12 @@ import type {
     CalculationOutput,
     ProjectStats,
     MaterialType,
+    NormalizedParams,
+    ConnectorConfig,
+    ConnectorType,
+    SeamType,
 } from '../core/types'
-import type { AppSettings } from '../../lib/types'
+import type { AppSettings, DuctItemType } from '../../lib/types'
 import type { ParseResult } from '../parse-engine/types'
 import type { EstimationContext } from '../core/types'
 import type { NestingPiece, DynamicSheetResult, SheetSize } from '../nesting-engine/types'
@@ -24,25 +28,33 @@ export interface OrchestratorDependencies {
     }
     calculationEngine: (
         type: MaterialType,
-        params: any,
+        params: NormalizedParams,
         qty: number,
         settings: AppSettings,
-        options?: any
-    ) => any // Returns CalculationResult (no weight)
+        options?: unknown
+    ) => CalculationOutput
     calcCache: {
-        hashKey: (...args: any[]) => string
+        hashKey: (
+            materialType: MaterialType,
+            params: NormalizedParams,
+            quantity: number,
+            thickness: number,
+            conn1?: ConnectorType,
+            conn2?: ConnectorType,
+            seam?: SeamType
+        ) => string
         get: (key: string) => CalculationOutput | undefined
         set: (key: string, result: CalculationOutput) => void
     }
     ruleEngine: {
-        applyConnectors: (type: any, conn: any) => any
-        applySeams: (type: any, seam: any) => any
+        applyConnectors: (type: DuctItemType, conn: ConnectorConfig) => ConnectorConfig
+        applySeams: (type: DuctItemType, seam: SeamType) => SeamType
     }
     correctionService: {
         getFactor: (type: MaterialType) => Promise<number>
     }
     assemblyEngine: {
-        generateAccessories: (params: any, conn1: any, conn2: any, qty: number) => BOMLine[]
+        generateAccessories: (params: NormalizedParams, conn1: ConnectorType, conn2: ConnectorType, qty: number) => BOMLine[]
     }
     partGenerator: (item: NormalizedItem) => NestingPiece[]
     nestingEngine: (pieces: NestingPiece[]) => DynamicSheetResult
@@ -50,7 +62,7 @@ export interface OrchestratorDependencies {
         get: (pieces: NestingPiece[]) => DynamicSheetResult | undefined
         set: (pieces: NestingPiece[], result: DynamicSheetResult) => void
     }
-    toMaterialType: (displayType: any) => MaterialType
+    toMaterialType: (displayType: DuctItemType) => MaterialType
 }
 
 export interface ProjectResult {
@@ -113,7 +125,7 @@ export class ProjectOrchestrator {
             const normalizedItem: NormalizedItem = {
                 id: Math.random().toString(36).substring(2, 9),
                 materialType,
-                displayType: parsed.displayType as any,
+                displayType: parsed.displayType as DuctItemType,
                 params: parsed.params,
                 quantity: row.quantity,
                 thickness: row.thickness,

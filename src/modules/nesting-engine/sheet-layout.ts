@@ -1,7 +1,7 @@
 // src/modules/nesting-engine/sheet-layout.ts
 // Generate visual layout data for rendering nested sheets
 
-import type { NestedSheet, Placement } from './types'
+import type { NestedSheet } from './types'
 
 export interface LayoutRect {
     x: number

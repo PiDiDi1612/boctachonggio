@@ -913,9 +913,6 @@ h1,
 .inline-block {
   display: inline-block;
 }
-.inline {
-  display: inline;
-}
 .flex {
   display: flex;
 }
@@ -948,6 +945,9 @@ h1,
 }
 .h-2 {
   height: 0.5rem;
+}
+.h-3 {
+  height: 0.75rem;
 }
 .h-3\.5 {
   height: 0.875rem;
@@ -1005,6 +1005,9 @@ h1,
 }
 .w-24 {
   width: 6rem;
+}
+.w-3 {
+  width: 0.75rem;
 }
 .w-3\.5 {
   width: 0.875rem;
@@ -1095,6 +1098,15 @@ h1,
 }
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 .cursor-default {
   cursor: default;
@@ -1323,6 +1335,10 @@ h1,
 .border-destructive\/30 {
   border-color: hsl(var(--destructive) / 0.3);
 }
+.border-gray-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+}
 .border-input {
   border-color: hsl(var(--input));
 }
@@ -1337,9 +1353,8 @@ h1,
 .border-transparent {
   border-color: transparent;
 }
-.border-gray-300 {
-  --tw-border-opacity: 1;
-  border-color: rgb(209 213 219 / var(--tw-border-opacity, 1));
+.border-t-transparent {
+  border-top-color: transparent;
 }
 .bg-\[var\(--amber\)\] {
   background-color: var(--amber);
@@ -1773,9 +1788,6 @@ h1,
 .opacity-70 {
   opacity: 0.7;
 }
-.opacity-80 {
-  opacity: 0.8;
-}
 .shadow {
   --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --tw-shadow-colored: 0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);
@@ -1813,10 +1825,6 @@ h1,
 }
 .blur {
   --tw-blur: blur(8px);
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
-}
-.grayscale {
-  --tw-grayscale: grayscale(100%);
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 .filter {
@@ -2145,12 +2153,12 @@ h1,
   --tw-ring-color: rgb(245 158 11 / 0.2);
 }
 
-.focus\:ring-ring:focus {
-  --tw-ring-color: hsl(var(--ring));
-}
-
 .focus\:ring-primary:focus {
   --tw-ring-color: hsl(var(--primary));
+}
+
+.focus\:ring-ring:focus {
+  --tw-ring-color: hsl(var(--ring));
 }
 
 .focus\:ring-offset-2:focus {

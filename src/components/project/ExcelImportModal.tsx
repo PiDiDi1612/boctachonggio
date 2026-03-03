@@ -13,11 +13,9 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DUCT_TYPE_LABELS, UNIT_OPTIONS, DEFAULT_THICKNESS } from '@/modules/duct-calc/constants'
-import type { DuctItem, DuctItemFormValues } from '@/lib/types'
-import { buildDimString } from '@/modules/duct-calc'
+import { DUCT_TYPE_LABELS } from '@/modules/duct-calc/constants'
+import type { DuctItem } from '@/lib/types'
 import { Upload, Check, AlertCircle, ArrowRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { getSettings } from '@/lib/storage'
 import * as projectService from '@/modules/project-engine/project-service'
 
@@ -40,7 +38,7 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
     const [step, setStep] = useState<1 | 2 | 3>(1)
     const [fileName, setFileName] = useState<string>('')
     const [headers, setHeaders] = useState<string[]>([])
-    const [dataRows, setDataRows] = useState<any[]>([])
+    const [dataRows, setDataRows] = useState<unknown[][]>([])
     const [mapping, setMapping] = useState<MappingState>({})
     const [previewData, setPreviewData] = useState<DuctItem[]>([])
 
@@ -72,7 +70,7 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
             if (rawData.length > 0) {
                 let headerIdx = 0;
                 for (let i = 0; i < Math.min(rawData.length, 15); i++) {
-                    const row = rawData[i] as any[];
+                    const row = rawData[i] as unknown[];
                     if (row && row.some(cell => {
                         const cellStr = String(cell || '').toLowerCase();
                         return cellStr.includes('tên') || cellStr.includes('vật tư') || cellStr.includes('số lượng');
@@ -82,8 +80,8 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
                     }
                 }
 
-                const headerRow = rawData[headerIdx] as any[]
-                const rows = rawData.slice(headerIdx + 1) as any[][]
+                const headerRow = rawData[headerIdx] as unknown[]
+                const rows = rawData.slice(headerIdx + 1) as unknown[][]
 
                 const cleanHeaders = headerRow.map(h => String(h || '').trim()).filter(h => !!h)
                 setHeaders(cleanHeaders)
@@ -91,7 +89,7 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
 
                 // Auto-mapping logic
                 const autoMap: MappingState = {}
-                headerRow.forEach((h, idx) => {
+                headerRow.forEach((h) => {
                     if (!h) return
                     const s = String(h).toLowerCase()
                     if (s === 'stt' || s.includes('số thứ tự')) autoMap.stt = String(h)
@@ -109,7 +107,7 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
 
     const handleProcessPreview = async () => {
         const rowsToProcess = dataRows
-            .filter(row => {
+            .filter((row: unknown[]) => {
                 const nameIdx = headers.indexOf(mapping.name)
                 return row && row[nameIdx] && String(row[nameIdx]).trim() !== ''
             });
