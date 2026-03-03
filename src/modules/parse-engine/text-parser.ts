@@ -13,11 +13,11 @@ import {
 
 // ─── Regex Patterns ──────────────────────────────────────────────────────────
 
-const PATTERN_W_H_L = /(\d+)\s*[x*×]\s*(\d+)(?:\s*[x*×]\s*(\d+))?/i
-const PATTERN_D_L = /D\s*(\d+)(?:\s*[x*×]\s*(\d+))?/i
-const PATTERN_W2_H2 = /(?:THU|RE)\s*(\d+)\s*[x*×]\s*(\d+)/i
-const PATTERN_R = /R\s*(\d+)/i
-const PATTERN_E = /E\s*(\d+)/i
+const PATTERN_W_H_L = /(?:W\s*|RỘNG\s*)?(\d+)\s*[x*×/]\s*(?:H\s*|CAO\s*)?(\d+)(?:(?:\s*[x*×/]\s*(?:L\s*|DÀI\s*)?|\s*[,;.-]\s*(?:L\s*|DÀI\s*)\s*=?\s*)(\d+))?/i
+const PATTERN_D_L = /(?:D\s*|PHI\s*|Ø\s*)\s*=?\s*(\d+)(?:(?:\s*[x*×/]\s*(?:L\s*|DÀI\s*)?|\s*[,;.-]\s*(?:L\s*|DÀI\s*)\s*=?\s*)(\d+))?/i
+const PATTERN_W2_H2 = /(?:THU|RE|VỀ|VE|RA)\s*(?:W\s*|RỘNG\s*)?(\d+)\s*[x*×/]\s*(?:H\s*|CAO\s*)?(\d+)/i
+const PATTERN_R = /R\s*=?\s*(\d+)/i
+const PATTERN_E = /E\s*=?\s*(\d+)/i
 
 // ─── Implementation Helpers ──────────────────────────────────────────────────
 
