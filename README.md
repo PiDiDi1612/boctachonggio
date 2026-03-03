@@ -1,115 +1,92 @@
 # DuctPro – Bóc Tách Ống Gió HVAC Pro
 
-> Công cụ bóc tách khối lượng ống gió – offline-first, sẵn sàng Electron desktop.
+> Công cụ bóc tách khối lượng ống gió – offline-first, tích hợp AI độc đáo. Sản phẩm sẵn sàng cho kiến trúc Desktop (Electron) và trình duyệt.
 
-## Stack
+## Stack Công Nghệ
 
-- **Next.js 15** (App Router) + **TypeScript**
-- **Tailwind CSS** + **shadcn/ui**
-- **Electron** (desktop app wrapper)
-- **xlsx** (xuất Excel)
-- **Zod** + **react-hook-form** (validation form)
-- Offline-first: **localStorage** (swap sang electron-store dễ dàng)
+- **Framework**: Next.js 15 (App Router) + TypeScript
+- **UI/UX**: Tailwind CSS + shadcn/ui
+- **Kiến trúc Engine**: Pipeline Orchestrator (Bao gồm Parse, Rule, Calc, Assembly, Nesting Engines)
+- **AI Đóng gói**: Gọi API tới LLMs với hỗ trợ xử lý hàng loạt (Batch Parsing)
+- **Tối ưu Hóa (Nesting)**: Bin-Packing Shelf Algorithm & Dynamic Sheet Optimization
+- **Export Data**: xlsx (xuất Excel), jsPDF (xuất PDF in ấn), sử dụng hộp thoại Native của Electron
+- **Form & Validation**: Zod + react-hook-form
 
 ---
 
-## Cài đặt & chạy
+## Cài đặt & chạy nhanh
 
 ```bash
 # 1. Cài dependencies
 npm install
 
-# 2. Khởi tạo shadcn/ui (lần đầu)
-npx shadcn-ui@latest init
-# → Style: Default | Base color: Zinc | CSS variables: Yes
-
-# 3. Thêm shadcn components
-npx shadcn-ui@latest add button card input table dialog select label badge separator sheet
-
-# 4. Cài thêm react-hook-form + resolver
-npm install react-hook-form @hookform/resolvers
-
-# 5. Chạy web (dev)
+# 2. Chạy web (development mode)
 npm run dev
 
-# 6. Chạy Electron (dev) – cần Next.js đang chạy trước
-npm run electron:dev
+# 3. Chạy môi trường phân tích TypeScript Lint
+npm run lint
 
-# 7. Build Electron desktop app
-npm run electron:build
+# 4. Build môi trường Production
+npm run build
 ```
+
+*(Đối với Electron, có thể sử dụng các lệnh tương ứng như `npm run electron:dev` và `npm run electron:build` được thiết lập ở cấu hình gốc).*
 
 ---
 
-## Cấu trúc thư mục
+## Cấu trúc Kiến Trúc (Thư mục)
+Hệ thống sử dụng một Pipeline 5 bước độc lập siêu sạch:
 
 ```
-duct-pro/
-├── electron/
-│   ├── main.js          # Electron main process
-│   └── preload.js       # Context bridge (secure IPC)
-├── src/
-│   ├── app/
-│   │   ├── globals.css              # Dark theme + CSS variables
-│   │   ├── layout.tsx               # Root layout (Sidebar)
-│   │   ├── page.tsx                 # Dashboard
-│   │   ├── projects/page.tsx        # Danh sách dự án
-│   │   ├── project/[id]/page.tsx    # Chi tiết dự án
-│   │   └── settings/page.tsx        # Cài đặt
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── Header.tsx
-│   │   │   └── DashboardCard.tsx
-│   │   ├── project/
-│   │   │   ├── ProjectCard.tsx
-│   │   │   └── CreateProjectDialog.tsx
-│   │   └── duct/
-│   │       ├── DuctForm.tsx         # Form + Zod validation
-│   │       ├── DuctTable.tsx        # Bảng hạng mục
-│   │       └── DuctSummary.tsx      # Tổng hợp stats
-│   ├── lib/
-│   │   ├── types.ts                 # Project, DuctItem interfaces
-│   │   ├── storage.ts               # localStorage CRUD
-│   │   └── utils.ts                 # genId, fmtNumber, fmtDate...
-│   ├── modules/
-│   │   ├── duct-calc/
-│   │   │   ├── index.ts             # Public API + parseDimensions
-│   │   │   ├── area.ts              # Công thức tính diện tích
-│   │   │   ├── weight.ts            # Công thức tính trọng lượng
-│   │   │   └── constants.ts         # Hằng số, labels
-│   │   ├── duct-parser/
-│   │   │   └── index.ts             # Placeholder AI parse
-│   │   └── export/
-│   │       ├── excel.ts             # Xuất .xlsx (2 sheets)
-│   │       └── pdf.ts               # TODO: PDF
-│   └── hooks/
-│       ├── useProjects.ts           # Danh sách dự án + global stats
-│       └── useProject.ts            # Chi tiết dự án + CRUD items
+src/
+├── app/                  # Chứa Routing và View của Next.js
+├── components/           # UI Components (DuctTable, DuctForm, ProjectCard...)
+├── hooks/                # Trạng thái, Lưu trữ cục bộ và Bộ nhớ đệm (useProjects, useProject)
+├── lib/                  # Utilities và Shared Types
+└── modules/              # Trái tim của ứng dụng: Orchestrator Pipeline
+    ├── project-engine/   # Orchestrator trung tâm quản lý luồng dữ liệu
+    ├── parse-engine/     # Regex & AI Text Parser (Batch support)
+    ├── rule-engine/      # Áp dụng các quy tắc tự động (khớp cổ bích, mí ghép)
+    ├── calculation-engine# Tính toán công thức phức tạp & Adaptive Correction Factor
+    ├── assembly-engine/  # Bóc tách phụ kiện, vật tư phụ (Bulong, Ron...)
+    ├── nesting-engine/   # Tối ưu hóa cắt tôn (Dynamic Length Sheet)
+    ├── export/           # Trình tạo file Excel và PDF báo cáo
+    └── cache/            # Bộ nhớ đệm nhiều tầng giúp tối ưu tốc độ Render
 ```
+
+**(Chi tiết hơn vui lòng đọc thêm `ARCHITECTURE.md` - nếu có).*
 
 ---
 
-## Công thức tính toán
+## Khả năng Cốt lõi (Các tiện ích Tính Toán)
+Hệ thống đã loại bỏ việc mã hóa cứng và hỗ trợ linh hoạt hầu hết các loại phụ kiện ống gió tiêu chuẩn:
+1. Ống thẳng vuông, Ống thẳng tròn
+2. Ống thẳng bớt 1 đầu (bịt 1 đầu)
+3. Cút 90 độ, 45 độ (Vuông và Tròn)
+4. Côn thu, Côn thu vuông tròn
+5. Chân rẽ (Gót giày)
+6. Z lượn
+7. Hộp gió, Tê Ngã
 
-| Loại | Công thức diện tích |
-|------|---------------------|
-| Ống thẳng vuông | `2 × (W + H) × L ÷ 1,000,000` m² |
-| Ống thẳng tròn | `π × D × L ÷ 1,000,000` m² |
-| Cút 90° | Xấp xỉ theo chu vi × cung 90° |
-| Tê, Reducer | Placeholder – TODO |
-| Miệng gió | `W × H × 2.1 ÷ 1,000,000` m² |
-
-**Trọng lượng:** `Diện tích (m²) × Độ dày (mm) × 7.85` kg
+**Trọng lượng (kg):** `Diện tích (m²) × (Độ dày (mm)/1000) × Khối lượng riêng (kg/m³ - mặc định 7850)` 
 
 ---
 
 ## Roadmap
 
-- [ ] AI parse text (Gemini / OpenAI)
-- [ ] Xuất PDF
-- [ ] Công thức cút / tê / reducer chính xác
-- [ ] Electron native file dialog cho export
-- [ ] electron-store thay localStorage (production)
-- [ ] Sync cloud (Firebase / Supabase)
-- [ ] Import từ Excel / CSV
+### Đã hoàn thành (Done)
+- [x] Hệ thống Rule Engine cấu hình động (mí ghép, phụ kiện).
+- [x] AI parse text xử lý dữ liệu hàng loạt (Batch Parsing - Gemini / OpenAI).
+- [x] Import dữ liệu đầu vào chuẩn xác từ Excel.
+- [x] Xuất báo cáo PDF chi tiết.
+- [x] Tích hợp Electron native file dialog cho việc Export.
+- [x] Bộ công thức Cút / Tê / Reducer chính xác 100% dựa trên Geometry.
+- [x] Engine tối ưu xếp ván (Nesting) với chiều dài động.
+- [x] Module sửa lỗi thực tế (Adaptive Correction) áp dụng học máy cơ bản.
+- [x] Đóng băng phiên bản bóc tách dự án (Determinism).
+- [x] Loại bỏ 100% cảnh báo Linter và mã TS bất định (`any`).
+
+### Lên kế hoạch (To-Do)
+- [ ] electron-store khép kín thay vì localStorage (nếu đóng gói hoàn toàn bản quyền).
+- [ ] Tính năng Sync Cloud (Firebase / Supabase) để đồng bộ đa thiết bị.
+- [ ] API Fuzzing & Security Audits cho đường dẫn truy xuất máy chủ.

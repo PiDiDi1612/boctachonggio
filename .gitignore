@@ -1,2 +1,21 @@
 node_modules
-my_project/
+.next
+dist
+out
+.env
+.env.local
+.env.development
+.env.production
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# build
+build
+coverage
+
+# OS
+.DS_Store
+Thumbs.db
