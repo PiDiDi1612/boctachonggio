@@ -18,12 +18,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import type { DuctItem, DuctItemType, DuctItemFormValues } from '@/lib/types'
+import type { DuctItem, DuctItemType, DuctItemFormValues, ConnectorType, SeamType } from '@/lib/types'
 import {
   THICKNESS_OPTIONS, DUCT_TYPE_LABELS, UNIT_OPTIONS, DEFAULT_THICKNESS
 } from '@/modules/duct-calc/constants'
 import {
-  calcArea, calcWeight, parseDimensions, buildDimString, calcItemMetrics,
+  parseDimensions, buildDimString, calcItemMetrics,
 } from '@/modules/duct-calc'
 import {
   CONNECTOR_OPTIONS, SEAM_OPTIONS,
@@ -198,20 +198,15 @@ export function DuctForm({ open, onOpenChange, initialItem, onSave }: DuctFormPr
   const [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam] =
     watch(['type', 'thickness', 'quantity', 'dimW', 'dimH', 'dimL', 'dimD', 'dimE', 'dimW2', 'dimH2', 'conn1', 'conn2', 'seam'])
 
-  // Live preview calculation (Sẽ dùng Dynamic Formula sau, tạm giữ nguyên để code chạy được)
+  // Live preview calculation
   const preview = useMemo(() => {
-    const dims = {
-      width: dimW, height: dimH, length: dimL,
-      diameter: dimD, radius: dimD, auxValue: dimE,
-      width2: dimW2, height2: dimH2
-    }
     const metrics = calcItemMetrics({
       type,
       dimensions: buildDimString(type, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2),
       thickness,
-      conn1: conn1 as any,
-      conn2: conn2 as any,
-      seam: seam as any,
+      conn1: conn1 as ConnectorType,
+      conn2: conn2 as ConnectorType,
+      seam: seam as SeamType,
     })
     return {
       area: metrics.area,
@@ -219,7 +214,7 @@ export function DuctForm({ open, onOpenChange, initialItem, onSave }: DuctFormPr
       totalArea: metrics.area * quantity,
       totalWeight: metrics.weight * quantity
     }
-  }, [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2])
+  }, [type, thickness, quantity, dimW, dimH, dimL, dimD, dimE, dimW2, dimH2, conn1, conn2, seam])
 
   function onSubmit(data: FormValues) {
     const dimensions = buildDimString(data.type, data.dimW, data.dimH, data.dimL, data.dimD, data.dimE, data.dimW2, data.dimH2)
@@ -230,9 +225,9 @@ export function DuctForm({ open, onOpenChange, initialItem, onSave }: DuctFormPr
       quantity: data.quantity,
       unit: data.unit,
       note: data.note ?? '',
-      conn1: data.conn1 as any,
-      conn2: data.conn2 as any,
-      seam: data.seam as any,
+      conn1: data.conn1 as ConnectorType,
+      conn2: data.conn2 as ConnectorType,
+      seam: data.seam as SeamType,
     })
 
     if (keepOpen && !isEdit) {

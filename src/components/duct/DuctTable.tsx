@@ -70,13 +70,12 @@ export function DuctTable({ items, onEdit, onDelete, onDuplicate }: Props) {
     )
   }
 
-  let sumArea = 0, sumWeight = 0
+  let sumArea = 0
   const rows = filteredItems.map(item => {
     const { area, weight } = calcItemMetrics(item)
     const ra = area * item.quantity
     const rw = weight * item.quantity
     sumArea += ra
-    sumWeight += rw
     return { item, area, weight, ra, rw }
   })
 
@@ -118,7 +117,7 @@ export function DuctTable({ items, onEdit, onDelete, onDuplicate }: Props) {
             </tr>
           </thead>
           <tbody className="text-[13px]">
-            {rows.map(({ item, area, weight, ra, rw }, idx) => {
+            {rows.map(({ item, area, weight, ra }, idx) => {
               // Phân tách kích thước để hiển thị riêng lẻ
               const parts = item.dimensions.split('x').map(Number)
               // Chuẩn Giai đoạn 12: W1 x H1 x L x D x E x W2 x H2

@@ -14,15 +14,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DUCT_TYPE_LABELS, UNIT_OPTIONS, DEFAULT_THICKNESS } from '@/modules/duct-calc/constants'
-import type { DuctItemType, DuctItemFormValues, ConnectorType, SeamType } from '@/lib/types'
+import type { DuctItem, DuctItemFormValues } from '@/lib/types'
 import { buildDimString } from '@/modules/duct-calc'
 import { Upload, Check, AlertCircle, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getSettings } from '@/lib/storage'
+import * as projectService from '@/modules/project-engine/project-service'
 
 interface ExcelImportModalProps {
     open: boolean
     onOpenChange: (v: boolean) => void
-    onImport: (items: DuctItemFormValues[]) => void
+    onImport: (items: DuctItem[]) => void
 }
 
 type MappingState = Record<string, string>
@@ -34,153 +36,13 @@ const TARGET_FIELDS = [
     { id: 'quantity', label: 'Số lượng', required: true },
 ]
 
-/**
- * Tách thông tin từ chuỗi "Tên vật tư"
- */
-function parseDuctInfo(rawName: string): {
-    type: DuctItemType;
-    dimW: number; dimH: number; dimL: number; dimD: number; dimW2: number; dimH2: number;
-    conn1: ConnectorType; conn2: ConnectorType; seam: SeamType;
-    note: string
-} {
-    const s = rawName.toUpperCase();
-    let type: DuctItemType = 'straight_square';
-    let dimW = 0, dimH = 0, dimL = 0, dimD = 0, dimW2 = 0, dimH2 = 0;
-    let conn1: ConnectorType = 'tdc';
-    let conn2: ConnectorType = 'tdc';
-    let seam: SeamType = 'pittsburgh';
-
-    // 1. Nhận diện loại dựa trên từ khóa
-    if (s.includes('CÔN THU')) {
-        type = s.includes('TRÒN') ? 'reducer_sq_rd' : 'reducer_square';
-    }
-    else if (s.includes('CÚT') || s.includes('CO')) type = 'elbow_90_radius';
-    else if (s.includes('HỘP GIÓ') || s.includes('BOX')) type = 'plenum_box';
-    else if (s.includes('CHÂN RẼ') || s.includes('GÓT DÀY')) type = 'shoe_tap';
-    else if (s.includes('SIMILI')) type = 'other';
-    else if (s.includes('ỐNG GIÓ')) type = 'straight_square';
-
-    // 2. Tìm các cụm số theo thứ tự (Loại bỏ các số đứng sau '1 ĐẦU' để tránh nhầm kích thước)
-    const cleanS = s.replace(/1 ĐẦU \d+/g, '1 ĐẦU');
-
-    // Thử bắt mẫu W1xH1/W2xH2 (Côn thu/Hộp gió dạng côn)
-    const reducerMatch = cleanS.match(/W(\d+)XH(\d+)\/W(\d+)XH(\d+)/i);
-    if (reducerMatch) {
-        dimW = parseInt(reducerMatch[1]);
-        dimH = parseInt(reducerMatch[2]);
-        dimW2 = parseInt(reducerMatch[3]);
-        dimH2 = parseInt(reducerMatch[4]);
-        if (type === 'plenum_box' || s.includes('HỘP GIÓ')) type = 'reducer_square';
-    } else {
-        const ktPart = cleanS.split(/KT:|KÍCH THƯỚC:/)[1] || cleanS;
-        const ktNumbers = ktPart.match(/\d+/g)?.map(Number) || [];
-
-        if ((type === 'reducer_square' || type === 'shoe_tap' || s.includes('CÔN')) && ktNumbers.length >= 5) {
-            dimW = ktNumbers[0];
-            dimH = ktNumbers[1];
-            dimW2 = ktNumbers[2];
-            dimH2 = ktNumbers[3];
-            dimL = ktNumbers[4];
-        } else if (ktNumbers.length >= 3) {
-            dimW = ktNumbers[0];
-            dimH = ktNumbers[1];
-            dimL = ktNumbers[2];
-        } else if (ktNumbers.length === 2) {
-            dimW = ktNumbers[0];
-            dimH = ktNumbers[1];
-        }
-    }
-
-    // 3. Ưu tiên tìm theo nhãn W, H, L, D (Nếu chưa có dimW2)
-    const wMatch = s.match(/W(\d+)/i);
-    const hMatch = s.match(/H(\d+)/i);
-    const lMatch = s.match(/L(\d+)/i);
-    const dMatch = s.match(/D(\d+)/i);
-    if (wMatch && dimW === 0) dimW = parseInt(wMatch[1]);
-    if (hMatch && dimH === 0) dimH = parseInt(hMatch[1]);
-    if (lMatch) dimL = parseInt(lMatch[1]);
-    if (dMatch) dimD = parseInt(dMatch[1]);
-
-    // 5. Nhận diện Đầu kết nối nâng cao
-    const parseConnector = (str: string, current: ConnectorType): ConnectorType => {
-        if (str.includes('BÍCH V30')) return 'bich_v30';
-        if (str.includes('BÍCH V40')) return 'bich_v40';
-        if (str.includes('BÍCH V50')) return 'bich_v50';
-        if (str.includes('BỊT ĐẦU') || str.includes('ĐẦU BỊT')) return 'bit_dau';
-        if (str.includes('NẸP C')) return 'nep_c';
-        if (str.includes('ĐỂ THẲNG')) return 'de_thang';
-        if (str.includes('TDC')) return 'tdc';
-        if (str.includes('BẺ CHÂN 30')) return 'be_chan_30';
-        return current;
-    };
-
-    // Kiểm tra mẫu "Đầu W...xH... [Kết nối]"
-    const specificSideMatch = s.match(/ĐẦU W(\d+)XH(\d+)\s+([^,.\s]+(\s+[^,.\s]+)*)/gi);
-    if (specificSideMatch) {
-        specificSideMatch.forEach(matchStr => {
-            const m = matchStr.match(/W(\d+)XH(\d+)/i);
-            if (m) {
-                const w = parseInt(m[1]);
-                const h = parseInt(m[2]);
-                const conn = parseConnector(matchStr.toUpperCase(), 'tdc' as ConnectorType);
-                if (w === dimW && h === dimH) conn1 = conn;
-                else if (w === dimW2 && h === dimH2) conn2 = conn;
-            }
-        });
-    }
-
-    // Kiểm tra mẫu "1 đầu A, 1 đầu B" (Nếu chưa nhận diện theo kích thước cụ thể)
-    const oneSideMatch = s.match(/1 ĐẦU ([^,]+)/g);
-    if (oneSideMatch && oneSideMatch.length >= 2 && !specificSideMatch) {
-        conn1 = parseConnector(oneSideMatch[0], conn1);
-        conn2 = parseConnector(oneSideMatch[1], conn2);
-    } else if (oneSideMatch && oneSideMatch.length === 1 && !specificSideMatch) {
-        const sideType = parseConnector(oneSideMatch[0], 'tdc' as ConnectorType);
-        if (sideType === 'bit_dau') conn2 = 'bit_dau';
-        else conn1 = sideType;
-    } else if (!specificSideMatch) {
-        // Fallback nhận diện chung
-        if (s.includes('BÍCH V30')) { conn1 = 'bich_v30'; conn2 = 'bich_v30'; }
-        else if (s.includes('BÍCH V40')) { conn1 = 'bich_v40'; conn2 = 'bich_v40'; }
-        else if (s.includes('BÍCH V50')) { conn1 = 'bich_v50'; conn2 = 'bich_v50'; }
-        else if (s.includes('BỊT ĐẦU') || s.includes('ĐẦU BỊT')) { conn2 = 'bit_dau'; }
-        else if (s.includes('NẸP C')) { conn1 = 'nep_c'; conn2 = 'nep_c'; }
-        else if (s.includes('ĐỂ THẲNG')) { conn1 = 'de_thang'; conn2 = 'de_thang'; }
-        else if (s.includes('TDC')) { conn1 = 'tdc'; conn2 = 'tdc'; }
-    }
-
-    // Đặc thù Hộp gió
-    if (type === 'plenum_box' || s.includes('HỘP GIÓ')) {
-        // Hộp gió mặc định thường có ít nhất 1 đầu để thẳng hoặc bẻ chân để đấu nối
-        if (!s.includes('BÍCH') && !s.includes('TDC') && conn1 === 'tdc') {
-            conn1 = 'de_thang';
-        }
-    }
-
-    // 6. Nhận diện Mí ghép
-    if (s.includes('ĐƠN-KÉP')) seam = 'don_kep';
-    else if (s.includes('NỐI C')) seam = 'noi_c';
-    else if (s.includes('HÀN 15')) seam = 'han_15';
-
-    // 7. Quy tắc mặc định của người dùng
-    if (type === 'shoe_tap') {
-        conn2 = 'be_chan_30';
-        seam = 'han_15';
-    }
-    if (type === 'reducer_sq_rd' || s.includes('VUÔNG-TRÒN')) {
-        seam = 'noi_c';
-    }
-
-    return { type, dimW, dimH, dimL, dimD, dimW2, dimH2, conn1, conn2, seam, note: rawName };
-}
-
 export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportModalProps) {
     const [step, setStep] = useState<1 | 2 | 3>(1)
     const [fileName, setFileName] = useState<string>('')
     const [headers, setHeaders] = useState<string[]>([])
     const [dataRows, setDataRows] = useState<any[]>([])
     const [mapping, setMapping] = useState<MappingState>({})
-    const [previewData, setPreviewData] = useState<DuctItemFormValues[]>([])
+    const [previewData, setPreviewData] = useState<DuctItem[]>([])
 
     const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -244,42 +106,30 @@ export function ExcelImportModal({ open, onOpenChange, onImport }: ExcelImportMo
         reader.readAsBinaryString(file)
     }
 
-    const handleProcessPreview = () => {
-        const processed: DuctItemFormValues[] = dataRows
+
+    const handleProcessPreview = async () => {
+        const rowsToProcess = dataRows
             .filter(row => {
                 const nameIdx = headers.indexOf(mapping.name)
                 return row && row[nameIdx] && String(row[nameIdx]).trim() !== ''
-            })
-            .map(row => {
-                const getVal = (field: string) => {
-                    const header = mapping[field]
-                    if (!header) return undefined
-                    const idx = headers.indexOf(header)
-                    return row[idx]
-                }
+            });
 
-                const rawName = String(getVal('name') || '')
-                const rawThickness = String(getVal('thickness') || '')
+        const settings = getSettings()
+        const rawRows = rowsToProcess.map(row => {
+            const getVal = (field: string) => {
+                const header = mapping[field]
+                if (!header) return undefined
+                const idx = headers.indexOf(header)
+                return row[idx]
+            }
+            return {
+                name: String(getVal('name') || ''),
+                quantity: Number(getVal('quantity')) || 1,
+                thickness: Number(getVal('thickness')) || settings.defaultThickness
+            }
+        })
 
-                // Tách độ dày từ chuỗi (ví dụ: "tôn dày 0.75mm" -> 0.75)
-                const thicknessMatch = rawThickness.match(/0\.\d+|1\.\d+/);
-                const thickness = thicknessMatch ? parseFloat(thicknessMatch[0]) : DEFAULT_THICKNESS;
-
-                const info = parseDuctInfo(rawName)
-                const dimensions = buildDimString(info.type, info.dimW, info.dimH, info.dimL, info.dimD, 0, info.dimW2, info.dimH2)
-
-                return {
-                    type: info.type,
-                    dimensions,
-                    thickness,
-                    quantity: Number(getVal('quantity')) || 1,
-                    unit: 'cái',
-                    conn1: info.conn1,
-                    conn2: info.conn2,
-                    seam: info.seam,
-                    note: rawName,
-                }
-            })
+        const processed = await projectService.batchCreateFromExcel(rawRows, settings)
         setPreviewData(processed)
         setStep(3)
     }

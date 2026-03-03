@@ -1,7 +1,7 @@
 // src/app/project/[id]/page.tsx
 'use client'
 
-import { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Download, Plus, FileDown, FileUp } from 'lucide-react'
 import { DuctForm } from '@/components/duct/DuctForm'
@@ -11,7 +11,7 @@ import { useProject } from '@/hooks/useProject'
 import { exportProjectToExcel } from '@/modules/export/excel'
 import { exportProjectToPDF } from '@/modules/export/pdf'
 import { fmtDateTime, fmtNumber } from '@/lib/utils'
-import type { DuctItem } from '@/lib/types'
+import { DuctItem, DuctItemFormValues } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -48,18 +48,13 @@ export default function ProjectDetailPage() {
   const [editingItem, setEditingItem] = useState<DuctItem | null>(null)
 
   // File upload for existing import
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  // Pipeline state
-  const [rangeImportOpen, setRangeImportOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
-
   // Tabs for main tracking & accessories
   const [activeTab, setActiveTab] = useState<'main' | 'accessories'>('main')
 
   // Accessory config states (Custom loss/ratio parameters)
   const [wastageRatio, setWastageRatio] = useState(10) // Hao hụt tôn (%)
-  const [keGocRatio, setKeGocRatio] = useState(4) // 4 cái / m2
+  const keGocRatio = 4 // 4 cái / m2
   const [ecuRatio, setEcuRatio] = useState(4) // 4 cái / m2
   const [tyRenRatio, setTyRenRatio] = useState(1) // 1 m / m2
   const [longDenRatio, setLongDenRatio] = useState(4) // 4 cái / m2
@@ -84,8 +79,9 @@ export default function ProjectDetailPage() {
   function handleEdit(item: DuctItem) { setEditingItem(item); setFormOpen(true) }
   function handleFormClose(v: boolean) { setFormOpen(v); if (!v) setEditingItem(null) }
   function handleDuplicate(item: DuctItem) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, area, weight, ...rest } = item
-    addItem(rest as any)
+    addItem(rest as DuctItemFormValues)
   }
 
   return (

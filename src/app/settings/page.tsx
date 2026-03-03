@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { clearAllData, getSettings, saveSettings, DEFAULT_SETTINGS } from '@/lib/storage'
+import { initAIFromSettings } from '@/modules/parse-engine'
 import { THICKNESS_OPTIONS } from '@/modules/duct-calc/constants'
 import { useRouter } from 'next/navigation'
 import type { AppSettings } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -38,6 +40,7 @@ export default function SettingsPage() {
 
   function handleSaveSettings() {
     saveSettings(settings)
+    initAIFromSettings(settings)
     setSaveSuccess(true)
     setTimeout(() => setSaveSuccess(false), 3000)
   }
@@ -130,10 +133,28 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground">Bích V (m)</Label>
+                <Label className="text-[10px] font-bold text-muted-foreground">Bích V30 (m)</Label>
                 <Input
-                  type="number" value={settings.connV} step="0.001"
-                  onChange={e => setSettings({ ...settings, connV: parseFloat(e.target.value) || 0 })}
+                  type="number" value={settings.connV30} step="0.001"
+                  onChange={e => setSettings({ ...settings, connV30: parseFloat(e.target.value) || 0 })}
+                  className="h-9 text-sm font-data"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground">Bích V40 (m)</Label>
+                <Input
+                  type="number" value={settings.connV40} step="0.001"
+                  onChange={e => setSettings({ ...settings, connV40: parseFloat(e.target.value) || 0 })}
+                  className="h-9 text-sm font-data"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground">Bích V50 (m)</Label>
+                <Input
+                  type="number" value={settings.connV50} step="0.001"
+                  onChange={e => setSettings({ ...settings, connV50: parseFloat(e.target.value) || 0 })}
                   className="h-9 text-sm font-data"
                 />
               </div>
@@ -142,16 +163,34 @@ export default function SettingsPage() {
               <div className="space-y-1.5">
                 <Label className="text-[10px] font-bold text-muted-foreground">Nẹp C (m)</Label>
                 <Input
-                  type="number" value={settings.connC_Cleat} step="0.001"
-                  onChange={e => setSettings({ ...settings, connC_Cleat: parseFloat(e.target.value) || 0 })}
+                  type="number" value={settings.connNepC} step="0.001"
+                  onChange={e => setSettings({ ...settings, connNepC: parseFloat(e.target.value) || 0 })}
                   className="h-9 text-sm font-data"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold text-muted-foreground">Nối C (m)</Label>
+                <Label className="text-[10px] font-bold text-muted-foreground">Bịt đầu (m)</Label>
                 <Input
-                  type="number" value={settings.connC_Joint} step="0.001"
-                  onChange={e => setSettings({ ...settings, connC_Joint: parseFloat(e.target.value) || 0 })}
+                  type="number" value={settings.connBitDau} step="0.001"
+                  onChange={e => setSettings({ ...settings, connBitDau: parseFloat(e.target.value) || 0 })}
+                  className="h-9 text-sm font-data"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground">Bẻ chân 30 (m)</Label>
+                <Input
+                  type="number" value={settings.connBeChan30} step="0.001"
+                  onChange={e => setSettings({ ...settings, connBeChan30: parseFloat(e.target.value) || 0 })}
+                  className="h-9 text-sm font-data"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-bold text-muted-foreground">Để thẳng (m)</Label>
+                <Input
+                  type="number" value={settings.connDeThang} step="0.001"
+                  onChange={e => setSettings({ ...settings, connDeThang: parseFloat(e.target.value) || 0 })}
                   className="h-9 text-sm font-data"
                 />
               </div>
@@ -191,22 +230,59 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* ── AI Integration (Disabled for now as per instructions) ───────────────────────────────────────── */}
-      <div className="bg-[var(--bg-raised)] border border-dashed border-[var(--border-bright)] rounded-xl p-6 mb-6 opacity-80">
+      {/* ── AI Integration ───────────────────────────────────────── */}
+      <div className="bg-[var(--bg-raised)] border border-[var(--border-bright)] rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-bold text-[var(--text-primary)]">Tích hợp AI</h2>
-          <Badge variant="secondary" className="bg-[var(--bg-elevated)]">LATER</Badge>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-bold text-[var(--text-primary)]">AI Parsing (Experimental)</h2>
+            <Badge variant="secondary" className="bg-[var(--bg-elevated)] text-[var(--primary-main)] border-[var(--primary-main)]/20">OLLAMA</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ai-toggle" className="text-xs font-semibold cursor-pointer">Kích hoạt AI</Label>
+            <input
+              id="ai-toggle"
+              type="checkbox"
+              checked={settings.aiEnabled}
+              onChange={e => setSettings({ ...settings, aiEnabled: e.target.checked })}
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+          </div>
         </div>
 
-        <div className="space-y-5 grayscale">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold">Gemini API Key</Label>
-            <Input type="password" placeholder="AIza..." disabled className="h-10 text-base" />
+        <div className={cn("space-y-4 transition-opacity", !settings.aiEnabled && "opacity-50 pointer-events-none")}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase text-muted-foreground">Base URL (Ollama/OpenAI)</Label>
+              <Input
+                placeholder="http://localhost:11434/v1"
+                value={settings.aiBaseUrl}
+                onChange={e => setSettings({ ...settings, aiBaseUrl: e.target.value })}
+                className="h-9 text-sm font-data"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase text-muted-foreground">AI Model</Label>
+              <Input
+                placeholder="sailor2:8b"
+                value={settings.aiModel}
+                onChange={e => setSettings({ ...settings, aiModel: e.target.value })}
+                className="h-9 text-sm font-data"
+              />
+            </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">OpenAI API Key</Label>
-            <Input type="password" placeholder="sk-..." disabled className="h-10 text-base" />
+            <Label className="text-xs font-bold uppercase text-muted-foreground">API Key (Nếu có)</Label>
+            <Input
+              type="password"
+              placeholder="ollama"
+              value={settings.aiApiKey}
+              onChange={e => setSettings({ ...settings, aiApiKey: e.target.value })}
+              className="h-9 text-sm font-data"
+            />
           </div>
+          <p className="text-[10px] text-muted-foreground italic">
+            * Mặc định sử dụng <strong>Ollama</strong> chạy Local. Hãy đảm bảo bạn đã tải model <code>sailor2:8b</code>.
+          </p>
         </div>
       </div>
 

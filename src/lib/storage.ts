@@ -102,6 +102,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
   defaultDensity: 7850,
   defaultThickness: 0.75,
+
+  // AI Configuration defaults (Ollama SAILOR2:8B)
+  aiEnabled: false,
+  aiBaseUrl: 'http://localhost:11434/v1',
+  aiApiKey: 'ollama',
+  aiModel: 'sailor2:8b',
 }
 
 /** Đọc cài đặt từ localStorage, merge với defaults */

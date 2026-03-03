@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Project, DuctItem, DuctItemFormValues, ProjectStats } from '@/lib/types'
 import { getProjectById, upsertProject } from '@/lib/storage'
-import { calcItemMetrics } from '@/modules/duct-calc'
-import { genId } from '@/lib/utils'
+import { getSettings } from '@/lib/storage'
+import * as projectService from '@/modules/project-engine/project-service'
 
 export function useProject(id: string) {
   const [project, setProject] = useState<Project | null>(null)
@@ -47,8 +47,14 @@ export function useProject(id: string) {
   const addItem = useCallback(
     async (values: DuctItemFormValues) => {
       if (!project) return
-      const { area, weight } = calcItemMetrics(values as DuctItem)
-      const item: DuctItem = { ...values, id: genId(), area, weight }
+      const settings = getSettings()
+      // Use Orchestrator via Service for calculation and parsing consistency
+      const item = await projectService.processManualItem(
+        (values as any).note || '', // rawText
+        values.quantity,
+        values.thickness,
+        settings
+      )
       await persist({ ...project, items: [...project.items, item] })
     },
     [project, persist],
@@ -56,13 +62,9 @@ export function useProject(id: string) {
 
   /** Bulk Import nhiều hạng mục (Excel) */
   const addItems = useCallback(
-    async (itemsData: DuctItemFormValues[]) => {
+    async (items: DuctItem[]) => {
       if (!project) return
-      const newItems = itemsData.map(values => {
-        const { area, weight } = calcItemMetrics(values as DuctItem)
-        return { ...values, id: genId(), area, weight }
-      })
-      await persist({ ...project, items: [...project.items, ...newItems] })
+      await persist({ ...project, items: [...project.items, ...items] })
     },
     [project, persist],
   )
@@ -71,9 +73,15 @@ export function useProject(id: string) {
   const updateItem = useCallback(
     async (itemId: string, values: DuctItemFormValues) => {
       if (!project) return
-      const { area, weight } = calcItemMetrics(values as DuctItem)
+      const settings = getSettings()
+      const newItem = await projectService.processManualItem(
+        (values as any).note || '',
+        values.quantity,
+        values.thickness,
+        settings
+      )
       const items = project.items.map((i) =>
-        i.id === itemId ? { ...i, ...values, area, weight } : i,
+        i.id === itemId ? { ...newItem, id: i.id } : i
       )
       await persist({ ...project, items })
     },
@@ -90,13 +98,13 @@ export function useProject(id: string) {
   )
 
   // ─── Tính stats ───────────────────────────────────────────────────────────
+  // Note: Values in items are now pre-calculated by Orchestrator
   const stats: ProjectStats = { totalItems: 0, totalArea: 0, totalWeight: 0 }
   if (project) {
     stats.totalItems = project.items.length
     for (const item of project.items) {
-      const { area, weight } = calcItemMetrics(item)
-      stats.totalArea += area * item.quantity
-      stats.totalWeight += weight * item.quantity
+      stats.totalArea += item.area * item.quantity
+      stats.totalWeight += item.weight * item.quantity
     }
   }
 

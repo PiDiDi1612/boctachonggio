@@ -89,6 +89,12 @@ export interface AppSettings {
 
   defaultDensity: number // kg/m3 (mặc định 7850)
   defaultThickness: number
+
+  // AI Parsing Configuration
+  aiEnabled: boolean
+  aiBaseUrl: string
+  aiApiKey: string
+  aiModel: string
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -97,6 +103,8 @@ export interface ProjectStats {
   totalItems: number
   totalArea: number    // m² (tổng có nhân số lượng)
   totalWeight: number  // kg (tổng có nhân số lượng)
+  totalLength?: number // mm (tổng chiều dài tôn cuộn cần dùng)
+  averageWaste?: number // % (hao hụt trung bình từ nesting)
 }
 
 export interface GlobalStats extends ProjectStats {

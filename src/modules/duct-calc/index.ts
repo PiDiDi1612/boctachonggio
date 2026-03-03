@@ -7,7 +7,6 @@ export * from './constants'
 
 import { calcArea, type DuctDimensions } from './area'
 import { calcWeight } from './weight'
-import { evaluateFormula } from './formula'
 import { getSettings } from '@/lib/storage'
 import type { DuctItem, DuctItemType } from '../../lib/types'
 
